@@ -1,15 +1,26 @@
-# Twitter/X 原图强制显示工具 (Original Image Enforcer)
+# pbs.twimg.com 原图链接规范脚本 (Original Image URL Normalizer)
 
-![Version](https://img.shields.io/badge/version-1.2-blue)
+![Version](https://img.shields.io/badge/version-2026.02.16.084139-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-通过高性能正则替换，强制 Twitter/X (推特) 显示原始高质量图片。
+这个 userscript **只在 `pbs.twimg.com` 生效**。
 
-## ✨ 特性
+当你在 X/Twitter 中右键图片并“在新标签页打开”后，进入 `pbs.twimg.com` 图片链接时，脚本会自动把 URL 规范为原图参数：`name=orig`。
 
-- 🚀 **零延迟**：即将引入 IntersectionObserver 优化 (Coming Soon)
-- ⚡ **轻量级**：纯原生 JavaScript 实现，无任何外部依赖
-- 🛡️ **隐私安全**：代码完全开源，不收集任何用户数据
+## ✨ 行为说明
+
+- 仅匹配：`*://pbs.twimg.com/*`
+- 如果已是 `name=orig`：不跳转
+- 如果 `name` 不是 `orig`：改写为 `orig`
+- 如果没有 `name` 参数：自动补上 `name=orig`
+- 对 `x.com` / `twitter.com` 以及其他网站：完全不生效
+
+## ⚡ 性能设计
+
+- 在 `document-start` 阶段执行
+- 仅做一次 URL 解析与条件重定向
+- 不使用 `MutationObserver` / `IntersectionObserver` / 事件监听
+- 无 DOM 扫描与持续运行开销
 
 ## 📥 安装
 
@@ -17,15 +28,11 @@
 2. 点击下方链接安装脚本：
    - [安装 pbs.twimg.com-orig.js](pbs.twimg.com-orig.js)
 
-## 🛠️ 技术细节
+## 🧪 URL 示例
 
-本脚本旨在解决 Twitter 默认加载压缩图片的问题。
-
-**优化策略 (开发中)**：
-- **IntersectionObserver**：仅当图片进入视口区域时才触发原图加载，大幅节省带宽并提升页面滚动性能。
-- **事件委托 (Event Delegation)**：减少事件监听器数量，降低内存占用。
-
-**当前实现**：
-- 使用 `MutationObserver` 实时监听 DOM 变化，自动替换新加载内容的图片链接。
-- 高性能正则匹配：预编译 Regex，避免重复开销。
-
+- `https://pbs.twimg.com/media/xxx.jpg?format=jpg&name=small`
+  - 自动变为：`...&name=orig`
+- `https://pbs.twimg.com/media/xxx.jpg?format=jpg&name=orig`
+  - 保持不变
+- `https://pbs.twimg.com/media/xxx.jpg?format=jpg`
+  - 自动补：`&name=orig`
