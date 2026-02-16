@@ -2,7 +2,7 @@
 // @name         Twitter/X Original Image URL Enforcer
 // @namespace    http://tampermonkey.net/
 // @version      1.4
-// @description  Force original image quality on Twitter/X with high-performance Regex replacement
+// @description  Only on pbs.twimg.com: normalize image URL to original quality (name=orig)
 // @author       Nine499
 // @match        *://pbs.twimg.com/*
 // @updateURL    https://github.com/Nine499/49js/raw/refs/heads/master/pbs.twimg.com-orig.js
