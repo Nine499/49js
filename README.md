@@ -1,38 +1,88 @@
-# pbs.twimg.com 原图链接规范脚本 (Original Image URL Normalizer)
+# 49js Userscript 集合
 
-![Version](https://img.shields.io/badge/version-2026.02.16.084139-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
+本仓库收录多个可直接安装的 Tampermonkey userscript。每个脚本独立生效，按各自 `@match` 规则运行，互不依赖。
 
-这个 userscript **只在 `pbs.twimg.com` 生效**。
+## 快速安装
 
-当你在 X/Twitter 中右键图片并“在新标签页打开”后，进入 `pbs.twimg.com` 图片链接时，脚本会自动把 URL 规范为原图参数：`name=orig`。
+### 1) 安装 Tampermonkey
 
-## ✨ 行为说明
+- 浏览器扩展安装地址：https://www.tampermonkey.net/
 
-- 仅匹配：`*://pbs.twimg.com/*`
-- 如果已是 `name=orig`：不跳转
-- 如果 `name` 不是 `orig`：改写为 `orig`
-- 如果没有 `name` 参数：自动补上 `name=orig`
-- 对 `x.com` / `twitter.com` 以及其他网站：完全不生效
+### 2) 安装 `pbs.twimg.com-orig.js`
 
-## ⚡ 性能设计
+- 远程安装（推荐）：
+  - https://github.com/Nine499/49js/raw/refs/heads/master/pbs.twimg.com-orig.js
+- 本地安装（开发）：
+  - 仓库文件：`pbs.twimg.com-orig.js`
 
-- 在 `document-start` 阶段执行
-- 仅做一次 URL 解析与条件重定向
-- 不使用 `MutationObserver` / `IntersectionObserver` / 事件监听
-- 无 DOM 扫描与持续运行开销
+### 3) 安装 `fanbox-Kemono.js`
 
-## 📥 安装
+- 远程安装（推荐）：
+  - https://github.com/Nine499/49js/raw/refs/heads/master/fanbox-Kemono.js
+- 本地安装（开发）：
+  - 仓库文件：`fanbox-Kemono.js`
 
-1. 安装 [Tampermonkey](https://www.tampermonkey.net/) 浏览器扩展。
-2. 点击下方链接安装脚本：
-   - [安装 pbs.twimg.com-orig.js](pbs.twimg.com-orig.js)
+## 脚本目录
 
-## 🧪 URL 示例
+| 脚本 | 作用 | 匹配范围 | 输出行为 | 适用场景 |
+| --- | --- | --- | --- | --- |
+| `pbs.twimg.com-orig.js` | 统一原图参数 | `*://pbs.twimg.com/*` | 将 URL 参数 `name` 规范为 `orig`，必要时重定向 | 在 X/Twitter 图片直链页获取原图 |
+| `fanbox-Kemono.js` | 帖子页跳转按钮 | `https://www.fanbox.cc/@*/posts/*` | 注入“打开 Kemono”按钮，跳转到对应 post | 在 Fanbox 帖子页快速跳转 |
 
-- `https://pbs.twimg.com/media/xxx.jpg?format=jpg&name=small`
-  - 自动变为：`...&name=orig`
-- `https://pbs.twimg.com/media/xxx.jpg?format=jpg&name=orig`
-  - 保持不变
-- `https://pbs.twimg.com/media/xxx.jpg?format=jpg`
-  - 自动补：`&name=orig`
+## 脚本详情
+
+### `pbs.twimg.com-orig.js`
+
+- 作用：把 `pbs.twimg.com` 图片链接统一到原图参数。
+- 生效范围：`*://pbs.twimg.com/*`
+- 行为规则：
+  - 若 `name=orig`，不处理。
+  - 若 `name` 缺失或不是 `orig`，改写为 `orig` 并执行 `location.replace`。
+  - 非 `pbs.twimg.com` 域名不生效。
+- 示例：
+  - `https://pbs.twimg.com/media/xxx.jpg?format=jpg&name=small` → `name=orig`
+  - `https://pbs.twimg.com/media/xxx.jpg?format=jpg` → 补上 `name=orig`
+
+### `fanbox-Kemono.js`
+
+- 作用：在 Fanbox 帖子页生成跳转到 Kemono 的按钮。
+- 生效范围：`https://www.fanbox.cc/@*/posts/*`
+- 行为规则：
+  - 从路径提取 `creatorId` 与 `postId`。
+  - 调用 `creator.get` 获取数字 `userId`，并缓存到 `sessionStorage`。
+  - 在页面右下角注入“打开 Kemono”按钮，跳转至对应 post。
+- 示例：
+  - 访问 `https://www.fanbox.cc/@<creator>/posts/<postId>` 后，页面出现按钮。
+  - 点击按钮后打开 `https://kemono.cr/fanbox/user/<numericUserId>/post/<postId>`。
+- 注意事项：
+  - 依赖页面可正常访问 Fanbox API。
+
+## FAQ
+
+### 1) 脚本没生效怎么办？
+
+按顺序排查：
+
+1. 确认 Tampermonkey 已启用。
+2. 确认访问页面匹配脚本 `@match`。
+3. 刷新页面并观察脚本是否被执行。
+
+### 2) 为什么只在特定域名生效？
+
+脚本按元数据 `@match` 精确匹配，默认不会跨站运行，这是预期行为。
+
+### 3) 远程安装和本地安装有什么区别？
+
+- 远程安装：通过 `@updateURL` / `@downloadURL` 跟随仓库更新，适合日常使用。
+- 本地安装：适合调试和开发，版本由本地文件控制。
+
+## 版本与更新
+
+- 版本号采用时间格式：`YYYY.MM.DD.HHMMSS`
+- 更新记录建议区分：
+  - 行为变更（影响脚本执行逻辑）
+  - 文档变更（仅说明更新）
+
+## License
+
+MIT
