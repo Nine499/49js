@@ -22,20 +22,12 @@
 - 本地安装（开发）：
   - 仓库文件：`fanbox-Kemono.js`
 
-### 4) 安装 `d-twimg.js`
-
-- 远程安装（推荐）：
-  - https://github.com/Nine499/49js/raw/refs/heads/master/d-twimg.js
-- 本地安装（开发）：
-  - 仓库文件：`d-twimg.js`
-
 ## 脚本目录
 
 | 脚本 | 作用 | 匹配范围 | 输出行为 | 适用场景 |
 | --- | --- | --- | --- | --- |
 | `pbs.twimg.com-orig.js` | 统一原图参数 | `*://pbs.twimg.com/*` | 将 URL 参数 `name` 规范为 `orig`，必要时重定向 | 在 X/Twitter 图片直链页获取原图 |
 | `fanbox-Kemono.js` | 帖子页跳转按钮 | `https://www.fanbox.cc/@*/posts/*` | 注入“打开 Kemono”按钮，跳转到对应 post | 在 Fanbox 帖子页快速跳转 |
-| `d-twimg.js` | 推文原图下载按钮 | `https://x.com/*/status/*` | 在推文详情页“查看”区域附近插入“下载原图”按钮，批量下载当前推文原图 | 在 X 推文详情页保存多图原图 |
 
 ## 脚本详情
 
@@ -64,25 +56,6 @@
   - 点击按钮后打开 `https://kemono.cr/fanbox/user/<numericUserId>/post/<postId>`。
 - 注意事项：
   - 依赖页面可正常访问 Fanbox API。
-
-### `d-twimg.js`
-
-- 作用：在 X 推文详情页为当前推文添加“下载原图”按钮。
-- 生效范围：`https://x.com/*/status/*`
-- 行为规则：
-  - 只处理当前 URL 对应主推文中的 `pbs.twimg.com/media` 图片。
-  - 下载时统一把图片 URL 规范到 `name=orig`。
-  - 文件名格式为 `<user>-<tweetId>-p<序号>.<扩展名>`。
-  - 按钮基于当前主推文内的“查看”节点挂载，避免依赖固定 XPath。
-  - 点击后顺序触发下载，下载任务按页面内图片顺序生成。
-- 示例：
-  - `https://x.com/<user>/status/<tweetId>` 页面点击“下载原图”后，得到：
-    - `<user>-<tweetId>-p1.jpg`
-    - `<user>-<tweetId>-p2.png`
-    - ...
-- 实现说明：
-  - 主推文定位基于当前 `status` 链接匹配。
-  - “查看”按钮定位使用当前推文内部节点扫描，不依赖页面绝对结构。
 
 ## FAQ
 
