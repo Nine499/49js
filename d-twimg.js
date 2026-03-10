@@ -22,8 +22,11 @@
   const BUTTON_TEXT_BUSY = "下载中...";
   const BUTTON_TEXT_EMPTY = "无图片";
   const VIEW_LABEL_TEXT = "查看";
-  const VIEW_LABEL_XPATH =
-    "/html/body/div[1]/div/div/div[2]/main/div/div/div/div/div/section/div/div/div[1]/div/div/article/div/div/div[3]/div[3]/div/div[1]/div/a/span/span";
+  const BUTTON_TEXT = {
+    busy: BUTTON_TEXT_BUSY,
+    empty: BUTTON_TEXT_EMPTY,
+    idle: BUTTON_TEXT_IDLE,
+  };
 
   function parseStatusPath(pathname) {
     const match = String(pathname || "").match(
@@ -69,15 +72,7 @@
   }
 
   function getButtonTextForState(state) {
-    if (state === "busy") {
-      return BUTTON_TEXT_BUSY;
-    }
-
-    if (state === "empty") {
-      return BUTTON_TEXT_EMPTY;
-    }
-
-    return BUTTON_TEXT_IDLE;
+    return BUTTON_TEXT[state] || BUTTON_TEXT_IDLE;
   }
 
   function isStatusPage() {
@@ -95,14 +90,10 @@
       return null;
     }
 
-    const articles = Array.from(document.querySelectorAll("article"));
-    for (const article of articles) {
-      const links = article.querySelectorAll('a[href*="/status/"]');
-      for (const link of links) {
-        const href = new URL(link.href);
-        if (href.pathname === statusPath) {
-          return article;
-        }
+    const links = document.querySelectorAll(`article a[href*="${statusPath}"]`);
+    for (const link of links) {
+      if (new URL(link.href).pathname === statusPath) {
+        return link.closest("article");
       }
     }
 
@@ -129,22 +120,22 @@
     return results;
   }
 
-  function findViewLabelSpan(article) {
-    const xpathNode = document.evaluate(
-      VIEW_LABEL_XPATH,
-      document,
-      null,
-      XPathResult.FIRST_ORDERED_NODE_TYPE,
-      null,
-    ).singleNodeValue;
-    if (xpathNode instanceof HTMLElement && article.contains(xpathNode)) {
-      return xpathNode;
-    }
+  function findArticleDownloadAnchor(article) {
+    return findArticleDownloadReference(article)?.anchorHost || null;
+  }
 
+  function findArticleDownloadReference(article) {
     const spans = article.querySelectorAll("span");
     for (const span of spans) {
       if (span.textContent?.trim() === VIEW_LABEL_TEXT) {
-        return span;
+        const viewLink = span.closest("a");
+        return viewLink
+          ? {
+              anchorHost: viewLink.parentElement,
+              referenceSpan: span,
+              viewLink,
+            }
+          : null;
       }
     }
 
@@ -191,15 +182,9 @@
 
   function mountButtonInArticle(article) {
     const existingWrapper = getInjectedWrapper();
-    const viewLabel = findViewLabelSpan(article);
-    if (!viewLabel) {
+    const reference = findArticleDownloadReference(article);
+    if (!reference) {
       removeInjectedButton();
-      return;
-    }
-
-    const viewLink = viewLabel.closest("a");
-    const anchorHost = viewLink?.parentElement;
-    if (!anchorHost) {
       return;
     }
 
@@ -209,8 +194,8 @@
 
     removeInjectedButton();
 
-    const button = buildInlineButton(viewLabel);
-    const wrapper = viewLink.cloneNode(false);
+    const button = buildInlineButton(reference.referenceSpan);
+    const wrapper = reference.viewLink.cloneNode(false);
     wrapper.id = BUTTON_WRAPPER_ID;
     wrapper.removeAttribute("href");
     wrapper.removeAttribute("target");
@@ -218,7 +203,7 @@
     wrapper.style.cursor = "pointer";
     wrapper.appendChild(button);
 
-    anchorHost.insertAdjacentElement("afterend", wrapper);
+    reference.anchorHost.insertAdjacentElement("afterend", wrapper);
   }
 
   function setButtonState(button, state, title) {
@@ -235,6 +220,18 @@
 
   function delay(ms) {
     return new Promise((resolve) => window.setTimeout(resolve, ms));
+  }
+
+  function buildDownloadTasks(parsed, urls) {
+    return urls.map((url, index) => ({
+      url,
+      name: buildDownloadName(
+        parsed.screenName,
+        parsed.tweetId,
+        index + 1,
+        getExtensionFromUrl(url),
+      ),
+    }));
   }
 
   function waitForArticle(timeoutMs) {
@@ -269,25 +266,16 @@
 
   function downloadFile(url, name) {
     return new Promise((resolve, reject) => {
-      if (typeof GM_download !== "function") {
-        reject(new Error("GM_download unavailable"));
-        return;
-      }
-
-      try {
-        GM_download({
-          url,
-          name,
-          conflictAction: "uniquify",
-          saveAs: false,
-          onload: () => resolve(),
-          onerror: (error) =>
-            reject(new Error(error?.error || "download failed")),
-          ontimeout: () => reject(new Error("download timeout")),
-        });
-      } catch (error) {
-        reject(error);
-      }
+      GM_download({
+        url,
+        name,
+        conflictAction: "uniquify",
+        saveAs: false,
+        onload: () => resolve(),
+        onerror: (error) =>
+          reject(new Error(error?.error || "download failed")),
+        ontimeout: () => reject(new Error("download timeout")),
+      });
     });
   }
 
@@ -315,19 +303,12 @@
     }
 
     const failures = [];
-    for (const [index, url] of urls.entries()) {
-      const filename = buildDownloadName(
-        parsed.screenName,
-        parsed.tweetId,
-        index + 1,
-        getExtensionFromUrl(url),
-      );
-
+    for (const task of buildDownloadTasks(parsed, urls)) {
       try {
-        await downloadFile(url, filename);
+        await downloadFile(task.url, task.name);
       } catch (error) {
         failures.push(
-          `${filename}: ${error instanceof Error ? error.message : String(error)}`,
+          `${task.name}: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
     }
@@ -380,10 +361,8 @@
       subtree: true,
     });
 
-    if (typeof window.addEventListener === "function") {
-      window.addEventListener("urlchange", scheduleEnsureButton);
-      window.addEventListener("popstate", scheduleEnsureButton);
-    }
+    window.addEventListener("urlchange", scheduleEnsureButton);
+    window.addEventListener("popstate", scheduleEnsureButton);
   }
 
   if (typeof window !== "undefined" && typeof document !== "undefined") {
@@ -393,4 +372,14 @@
       bootstrap();
     }
   }
+
+  globalThis.__D_TWIMG_TEST__ = {
+    buildDownloadTasks,
+    collectOriginalImageUrls,
+    findArticleDownloadAnchor,
+    findArticleDownloadReference,
+    getExtensionFromUrl,
+    normalizeOriginalImageUrl,
+    parseStatusPath,
+  };
 })();

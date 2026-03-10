@@ -35,7 +35,7 @@
 | --- | --- | --- | --- | --- |
 | `pbs.twimg.com-orig.js` | 统一原图参数 | `*://pbs.twimg.com/*` | 将 URL 参数 `name` 规范为 `orig`，必要时重定向 | 在 X/Twitter 图片直链页获取原图 |
 | `fanbox-Kemono.js` | 帖子页跳转按钮 | `https://www.fanbox.cc/@*/posts/*` | 注入“打开 Kemono”按钮，跳转到对应 post | 在 Fanbox 帖子页快速跳转 |
-| `d-twimg.js` | 推文原图下载按钮 | `https://x.com/*/status/*` | 在推文详情页“查看”附近插入“下载原图”按钮，批量下载当前推文原图 | 在 X 推文详情页保存多图原图 |
+| `d-twimg.js` | 推文原图下载按钮 | `https://x.com/*/status/*` | 在推文详情页“查看”区域附近插入“下载原图”按钮，批量下载当前推文原图 | 在 X 推文详情页保存多图原图 |
 
 ## 脚本详情
 
@@ -73,12 +73,16 @@
   - 只处理当前 URL 对应主推文中的 `pbs.twimg.com/media` 图片。
   - 下载时统一把图片 URL 规范到 `name=orig`。
   - 文件名格式为 `<user>-<tweetId>-p<序号>.<扩展名>`。
-  - 按钮挂载在推文底部“查看”区域附近，点击后顺序触发下载。
+  - 按钮基于当前主推文内的“查看”节点挂载，避免依赖固定 XPath。
+  - 点击后顺序触发下载，下载任务按页面内图片顺序生成。
 - 示例：
   - `https://x.com/<user>/status/<tweetId>` 页面点击“下载原图”后，得到：
     - `<user>-<tweetId>-p1.jpg`
     - `<user>-<tweetId>-p2.png`
     - ...
+- 实现说明：
+  - 主推文定位基于当前 `status` 链接匹配。
+  - “查看”按钮定位使用当前推文内部节点扫描，不依赖页面绝对结构。
 
 ## FAQ
 
