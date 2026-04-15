@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Fanbox -> Kemono 按钮（数字ID）
 // @namespace    http://tampermonkey.net/
-// @version      2026.03.04.090131
+// @version      2026.04.15.000001
 // @description  在 Fanbox 帖子页添加按钮，点击后用数字 userId 打开 Kemono
 // @author       Nine499
 // @icon         https://s.pximg.net/common/images/fanbox/favicon.ico
