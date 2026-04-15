@@ -6,6 +6,7 @@
 // @author       Nine499
 // @icon         https://s.pximg.net/common/images/fanbox/favicon.ico
 // @match        https://www.fanbox.cc/@*/posts/*
+// @match        https://*.fanbox.cc/posts/*
 // @grant        none
 // @downloadURL  https://github.com/Nine499/49js/raw/refs/heads/master/fanbox-Kemono.js
 // @updateURL    https://github.com/Nine499/49js/raw/refs/heads/master/fanbox-Kemono.js
@@ -14,10 +15,18 @@
 (() => {
   "use strict";
 
-  const match = location.pathname.match(/^\/@([^/]+)\/posts\/([^/]+)/);
-  if (!match) return;
+  const path = location.pathname;
+  const host = location.hostname;
 
-  const [, creatorId, postId] = match;
+  const wwwMatch = path.match(/^\/@([^/]+)\/posts\/([^/]+)\/?$/);
+  const subdomainMatch = path.match(/^\/posts\/([^/]+)\/?$/);
+  const subdomainCreatorId = host.match(/^([^.]+)\.fanbox\.cc$/)?.[1];
+
+  const creatorId = wwwMatch?.[1] || (subdomainCreatorId !== "www" ? subdomainCreatorId : null);
+  const postId = wwwMatch?.[2] || subdomainMatch?.[1];
+
+  if (!creatorId || !postId) return;
+
   const cacheKey = `fanbox:numericUserId:${creatorId}`;
 
   const getNumericUserId = async () => {
